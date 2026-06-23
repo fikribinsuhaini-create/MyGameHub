@@ -22,6 +22,8 @@ const configReady = window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.su
 const supabase = configReady ? window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY) : null;
 let persistTimer = 0;
 let syncTimer = 0;
+let pushInFlight = false;
+let pullInFlight = false;
 
 function load() {
   const raw = localStorage.getItem(STORAGE_KEY);
@@ -386,12 +388,15 @@ async function ensureSession() {
 }
 
 async function pullCloud() {
+  if (pullInFlight) { pushDebug("Pull skipped: already running"); return; }
   if (!supabase) { pushDebug("Pull skipped: no Supabase client"); return; }
   if (!state.cloud.userId) { pushDebug("Pull skipped: no user id"); return; }
   if (!state.settings.cloudSync) { pushDebug("Pull skipped: cloud sync off"); return; }
   const userId = state.cloud.userId;
+  pullInFlight = true;
   try {
     pushDebug("Pulling cloud data");
+    pushDebug("Pull query start");
     const [profileRes, settingsRes, progressRes, savesRes] = await Promise.all([
       supabase.from(SYNC_TABLES.profiles).select("*").eq("id", userId).maybeSingle(),
       supabase.from(SYNC_TABLES.settings).select("*").eq("user_id", userId).maybeSingle(),
@@ -444,20 +449,26 @@ async function pullCloud() {
     pushDebug(`Pull failed: ${error.message || error}`);
     toast(`Pull failed: ${error.message || error}`);
     render();
+  } finally {
+    pullInFlight = false;
   }
 }
 
 async function pushCloud() {
+  if (pushInFlight) { pushDebug("Push skipped: already running"); return; }
   if (!supabase) { pushDebug("Push skipped: no Supabase client"); return; }
   if (!state.cloud.userId) { pushDebug("Push skipped: no user id"); return; }
   if (!state.settings.cloudSync) { pushDebug("Push skipped: cloud sync off"); return; }
   if (!isOnline()) { pushDebug("Push skipped: offline"); return; }
   const userId = state.cloud.userId;
+  pushInFlight = true;
   try {
     pushDebug(`Push start for ${userId}`);
+    pushDebug("profiles upsert start");
     const profileWrite = await supabase.from(SYNC_TABLES.profiles).upsert({ id: userId, display_name: state.profile.name, avatar: state.profile.avatar });
     if (profileWrite.error) throw new Error(`profiles: ${profileWrite.error.message}`);
     pushDebug("profiles upsert ok");
+    pushDebug("settings upsert start");
     const settingsWrite = await supabase.from(SYNC_TABLES.settings).upsert({
       user_id: userId,
       dark_mode: state.settings.dark,
@@ -467,6 +478,7 @@ async function pushCloud() {
     }, { onConflict: "user_id" });
     if (settingsWrite.error) throw new Error(`settings: ${settingsWrite.error.message}`);
     pushDebug("settings upsert ok");
+    pushDebug("progress upsert start");
     const progressWrite = await supabase.from(SYNC_TABLES.progress).upsert(GAMES.map((game) => ({
       user_id: userId,
       game_type: game,
@@ -492,7 +504,7 @@ async function pushCloud() {
       last_played: save.updatedAt || new Date().toISOString(),
       updated_at: save.updatedAt || new Date().toISOString()
     }));
-    if (saves.length) { const savesWrite = await supabase.from(SYNC_TABLES.saves).upsert(saves, { onConflict: "user_id,puzzle_key" }); if (savesWrite.error) throw new Error(`saves: ${savesWrite.error.message}`); pushDebug(`saves upsert ok (${saves.length})`); } else { pushDebug("no saves to upsert"); }
+    if (saves.length) { pushDebug(`saves upsert start (${saves.length})`); const savesWrite = await supabase.from(SYNC_TABLES.saves).upsert(saves, { onConflict: "user_id,puzzle_key" }); if (savesWrite.error) throw new Error(`saves: ${savesWrite.error.message}`); pushDebug(`saves upsert ok (${saves.length})`); } else { pushDebug("no saves to upsert"); }
     state.cloud.lastSyncedAt = new Date().toISOString();
     state.cloud.status = "Synced";
     pushDebug("Push complete");
@@ -503,6 +515,8 @@ async function pushCloud() {
     pushDebug(`Push failed: ${error.message || error}`);
     toast(`Sync failed: ${error.message || error}`);
     render();
+  } finally {
+    pushInFlight = false;
   }
 }
 
