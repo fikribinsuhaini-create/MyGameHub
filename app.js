@@ -566,7 +566,7 @@ function handleAction(event) {
     const save = ensureSave(btn.dataset.game, btn.dataset.difficulty, level);
     state.currentKey = save.key; state.route = "play"; upsertRecent(save.key); persist(); render(); return;
   }
-  if (action === "resume") { state.currentKey = btn.dataset.key; state.route = "play"; upsertRecent(btn.dataset.key); persist(); render(); return; }
+  if (action === "resume") { const save = state.saves[btn.dataset.key]; if (!save || save.completed) { toast("No active puzzle to continue"); render(); return; } state.currentKey = save.key; state.route = "play"; upsertRecent(save.key); persist(); render(); return; }
   if (action === "next-level") { const save = currentSave(); if (!save) return; const nextSave = ensureSave(save.game, save.difficulty, Math.min(LEVELS, save.level + 1)); state.currentKey = nextSave.key; state.selected = null; state.route = "play"; upsertRecent(nextSave.key); persist(); render(); return; }
   if (action === "replay-level") { const save = currentSave(); if (!save) return; delete state.saves[save.key]; const replay = ensureSave(save.game, save.difficulty, save.level); state.currentKey = replay.key; state.selected = null; state.route = "play"; upsertRecent(replay.key); persist(); render(); return; }
   if (action === "back-games") { const save = currentSave(); if (!save) return; state.game = save.game; state.difficulty = save.difficulty; state.route = "games"; render(); return; }
