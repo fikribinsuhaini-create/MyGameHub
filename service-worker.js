@@ -1,4 +1,4 @@
-const CACHE_NAME = "puzzlehub-cache-v1";
+const CACHE_NAME = "puzzlehub-cache-v2";
 const APP_ASSETS = ["./","./index.html","./styles.css","./app.js","./config.js","./manifest.json",
   "./connect.html",
   "./connect.js","./offline.html","./icons/icon.svg","./icons/icon-180.png","./icons/icon-192.png","./icons/icon-512.png"];

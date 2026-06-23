@@ -1,14 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1fd18a"/>
-      <stop offset="100%" stop-color="#0f8a5e"/>
+      <stop offset="0%" stop-color="#0b1724"/>
+      <stop offset="100%" stop-color="#102131"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#122438"/>
+      <stop offset="100%" stop-color="#0b1522"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="132" fill="#081015"/>
-  <rect x="44" y="44" width="424" height="424" rx="112" fill="url(#bg)"/>
-  <rect x="108" y="116" width="296" height="280" rx="48" fill="#ffffff" fill-opacity="0.10"/>
-  <path d="M190 255c0-54 36-90 92-90 34 0 59 12 77 33l-37 30c-10-13-23-20-40-20-29 0-47 18-47 47 0 30 18 48 47 48 17 0 30-7 40-21l37 30c-18 21-43 33-77 33-56 0-92-36-92-90Z" fill="#ffffff"/>
-  <path d="M278 168h108v41h-33v135h-43V209h-32z" fill="#ffffff"/>
-  <rect x="168" y="372" width="176" height="18" rx="9" fill="#dff8ed" fill-opacity="0.9"/>
+  <rect width="512" height="512" rx="128" fill="#071018"/>
+  <rect width="512" height="512" rx="128" fill="url(#bg)"/>
+  <ellipse cx="256" cy="112" rx="188" ry="72" fill="#72d4ff" opacity="0.14"/>
+  <rect x="72" y="72" width="368" height="368" rx="82" fill="url(#panel)" stroke="#7cbfe8" stroke-opacity="0.45" stroke-width="8"/>
+  <g transform="translate(133 133)">
+    <rect x="0" y="0" width="246" height="246" rx="18" fill="none" stroke="#e1eef8" stroke-opacity="0.9" stroke-width="6"/>
+    <path d="M82 0V246M164 0V246M0 82H246M0 164H246" stroke="#e1eef8" stroke-opacity="0.7" stroke-width="6"/>
+    <path d="M82 0V246M0 164H246" stroke="#f0c36b" stroke-linecap="round" stroke-width="8"/>
+    <path d="M178 68 232 14" stroke="#72d4ff" stroke-linecap="round" stroke-width="10"/>
+    <circle cx="123" cy="123" r="16" fill="#4dd9a8"/>
+    <text x="14" y="32" fill="#eff7fb" font-family="Segoe UI, Arial, sans-serif" font-size="32" font-weight="700">9</text>
+    <text x="206" y="214" fill="#eff7fb" font-family="Segoe UI, Arial, sans-serif" font-size="32" font-weight="700">7</text>
+  </g>
+  <text x="256" y="402" text-anchor="middle" fill="#8fa4b7" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="600" letter-spacing="5">PUZZLE</text>
+  <text x="256" y="444" text-anchor="middle" fill="#eff7fb" font-family="Segoe UI, Arial, sans-serif" font-size="54" font-weight="800" letter-spacing="2">HUB</text>
 </svg>

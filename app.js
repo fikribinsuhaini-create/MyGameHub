@@ -256,24 +256,20 @@ function render() {
 function homeView() {
   const cont = continueSave();
   return `
-  <section class="stack home-stack">
-    <section class="hero-panel compact-hero">
-      <div class="hero-head compact-hero-head">
-        <div class="hero-copy compact-hero-copy">
+  <section class="stack home-stack mobile-home">
+    <section class="hero-panel mobile-hero">
+      <div class="mobile-hero-top">
+        <div>
           <p class="eyebrow">PuzzleHub</p>
-          <h2 class="hero-title compact-hero-title">Three puzzle homes, one place.</h2>
-          <p class="muted compact-hero-text">Resume fast. Pick game fast.</p>
+          <h2 class="hero-title mobile-hero-title">Pick up and play.</h2>
         </div>
-        <div class="board-summary compact-home-summary"><strong class="big-number">${state.stats.totalCompleted}</strong><span class="muted">Solved</span></div>
+        <div class="mobile-hero-badge"><strong>${state.stats.totalCompleted}</strong><span>Solved</span></div>
       </div>
-    </section>
-    <section class="section-stack">
-      <div class="section-head"><h2 class="section-title">Continue Playing</h2></div>
-      ${cont ? `<article class="continue-card compact-continue"><div><h3>${meta[cont.game].title} Level ${cont.level}</h3><p class="muted">${cap(cont.difficulty)} - ${fmt(cont.timer)}</p></div><button class="accent-button" data-action="resume" data-key="${cont.key}" type="button">Continue</button></article>` : `<article class="continue-card compact-continue"><div><h3>Fresh board waiting</h3><p class="muted">Start with Sudoku easy.</p></div><button class="accent-button" data-action="start" data-game="sudoku" data-difficulty="easy" type="button">Start</button></article>`}
+      ${cont ? `<article class="continue-card home-continue-card"><div><span class="game-pill">${meta[cont.game].title}</span><h3>Level ${cont.level}</h3><p class="muted">${cap(cont.difficulty)} • ${fmt(cont.timer)}</p></div><button class="accent-button" data-action="resume" data-key="${cont.key}" type="button">Continue</button></article>` : `<article class="continue-card home-continue-card"><div><span class="game-pill">Sudoku</span><h3>Fresh start ready</h3><p class="muted">Jump into easy mode.</p></div><button class="accent-button" data-action="start" data-game="sudoku" data-difficulty="easy" type="button">Start</button></article>`}
     </section>
     <section class="section-stack">
       <div class="section-head"><h2 class="section-title">Game Library</h2></div>
-      <div class="library-grid compact-library">${GAMES.map((game) => `<article class="game-card compact-game-card"><h3>${meta[game].title}</h3><p class="muted">${completedCount(game)} / ${LEVELS}</p><div class="bar-track"><div class="bar-fill" style="width:${pct(game)}%"></div></div><button class="accent-button" data-action="library" data-game="${game}" type="button">Open</button></article>`).join("")}</div>
+      <div class="mobile-library-grid">${GAMES.map((game) => `<button class="mobile-game-tile" data-action="library" data-game="${game}" type="button"><span class="mobile-game-name">${meta[game].title}</span><span class="mobile-game-count">${completedCount(game)} / ${LEVELS}</span><span class="mobile-game-percent">${pct(game)}%</span></button>`).join("")}</div>
     </section>
   </section>`;
 }
@@ -297,9 +293,9 @@ function boardView(save, def) {
   if (save.game === "kakuro") {
     const cells = []; const size = def.puzzle.length + 1;
     for (let r = 0; r < size; r += 1) for (let c = 0; c < size; c += 1) {
-      if (r === 0 && c === 0) cells.push(`<div class="clue-cell">Σ</div>`);
-      else if (r === 0) cells.push(`<div class="clue-cell">${def.colSums[c - 1]}</div>`);
-      else if (c === 0) cells.push(`<div class="clue-cell">${def.rowSums[r - 1]}</div>`);
+      if (r === 0 && c === 0) cells.push(`<div class="clue-cell kakuro-corner"></div>`);
+      else if (r === 0) cells.push(`<div class="clue-cell kakuro-clue top-clue"><span class="clue-down">${def.colSums[c - 1]}</span></div>`);
+      else if (c === 0) cells.push(`<div class="clue-cell kakuro-clue side-clue"><span class="clue-right">${def.rowSums[r - 1]}</span></div>`);
       else { const given = def.puzzle[r - 1][c - 1]; const v = save.board[r - 1][c - 1]; const selected = state.selected && state.selected.row === r - 1 && state.selected.col === c - 1; cells.push(`<button class="kakuro-cell ${given ? "given" : ""} ${selected ? "selected" : ""}" data-action="cell" data-row="${r - 1}" data-col="${c - 1}" type="button">${v ? `<span>${v}</span>` : noteGrid(save.notes[r - 1][c - 1] || [])}</button>`); }
     }
     return `<div class="kakuro-board" style="grid-template-columns:repeat(${size},minmax(0,1fr));">${cells.join("")}</div>`;
@@ -322,12 +318,14 @@ function playView() {
   const bestForGame = state.stats.bestTimes?.[save.game] || gameStats.best;
   const isBest = save.completed && bestForGame === save.timer;
   const isSudoku = save.game === "sudoku";
+  const isKakuro = save.game === "kakuro";
+  const useDigitShell = isSudoku || isKakuro;
   const pad = save.game === "sumplete"
     ? `<article class="list-card"><h3>Tap cell to cycle</h3><p class="muted">Keep -> Remove -> Lock. No extra button needed.</p></article>`
-    : isSudoku
+    : useDigitShell
       ? `<div class="sudoku-input-shell"><div class="sudoku-tool-row"><button class="sudoku-tool ${state.noteMode ? "active" : ""}" data-action="notes" type="button"><span>Notes</span></button><button class="sudoku-tool" data-action="hint" type="button"><span>Hint</span></button><button class="sudoku-tool" data-action="undo" type="button"><span>Undo</span></button><button class="sudoku-tool" data-action="erase" type="button"><span>Erase</span></button></div><div class="sudoku-digit-row">${[1,2,3,4,5,6,7,8,9].map((n) => `<button class="sudoku-digit" data-action="digit" data-value="${n}" type="button">${n}</button>`).join("")}</div></div>`
       : `<div class="pad-grid">${[1,2,3,4,5,6,7,8,9].map((n) => `<button class="pad-button" data-action="digit" data-value="${n}" type="button">${n}</button>`).join("")}<button class="pad-button" data-action="erase" type="button">Erase</button></div>`;
-  return `<section class="stack play-screen ${isSudoku ? "sudoku-screen" : ""}">${save.completed ? `<article class="celebration panel"><p class="eyebrow">Puzzle Complete</p><h2>${meta[save.game].title} cleared</h2><p class="muted">Time ${fmt(save.timer)} • ${isBest ? "New personal best" : "Progress saved"}.</p><div class="quick-grid"><article class="stat-card"><span class="muted">Completed</span><strong>${gameStats.completed} / ${LEVELS}</strong></article><article class="stat-card"><span class="muted">Best Time</span><strong>${bestForGame ? fmt(bestForGame) : fmt(save.timer)}</strong></article></div><div class="action-row"><button class="accent-button" data-action="next-level" type="button">Next Level</button><button class="ghost-button" data-action="replay-level" type="button">Replay</button><button class="ghost-button" data-action="back-games" type="button">Back to Menu</button></div></article>` : ""}<article class="board-shell ${isSudoku ? "sudoku-shell" : ""}"><div class="route-head ${isSudoku ? "sudoku-head" : ""}">${isSudoku ? `<div class="sudoku-level-wrap"><p class="eyebrow">${save.difficulty.toUpperCase()}</p><h2 class="board-title">Level ${save.level}</h2></div><div class="sudoku-timer-wrap"><strong class="sudoku-timer" data-live-timer="1">${fmt(save.timer)}</strong><span class="muted">${syncLabel()}</span></div>` : `<div><p class="eyebrow">${meta[save.game].title}</p><h2 class="board-title">Level ${save.level}</h2></div><div class="board-summary"><strong>${fmt(save.timer)}</strong><span class="muted">${syncLabel()}</span></div>`}</div>${save.game === "kakuro" ? `<article class="list-card"><h3>Cross Sum Mode</h3><p class="muted">Fill digits so each row and column matches clue totals. Notes help for planning.</p></article>` : ""}<div class="board-frame ${isSudoku ? "sudoku-frame" : ""}">${boardView(save, def)}</div><div class="board-actions ${isSudoku ? "sudoku-actions" : ""}">${isSudoku ? pad : `<div class="control-strip"><button class="toggle-button ${state.noteMode ? "active" : ""}" data-action="notes" type="button">Notes</button><button class="toggle-button" data-action="hint" type="button">Hint</button><button class="toggle-button" data-action="undo" type="button">Undo</button><button class="toggle-button" data-action="redo" type="button">Redo</button></div>${pad}`}</div></article></section>`;
+  return `<section class="stack play-screen ${isSudoku ? "sudoku-screen" : ""}">${save.completed ? `<article class="celebration panel"><p class="eyebrow">Puzzle Complete</p><h2>${meta[save.game].title} cleared</h2><p class="muted">Time ${fmt(save.timer)} • ${isBest ? "New personal best" : "Progress saved"}.</p><div class="quick-grid"><article class="stat-card"><span class="muted">Completed</span><strong>${gameStats.completed} / ${LEVELS}</strong></article><article class="stat-card"><span class="muted">Best Time</span><strong>${bestForGame ? fmt(bestForGame) : fmt(save.timer)}</strong></article></div><div class="action-row"><button class="accent-button" data-action="next-level" type="button">Next Level</button><button class="ghost-button" data-action="replay-level" type="button">Replay</button><button class="ghost-button" data-action="back-games" type="button">Back to Menu</button></div></article>` : ""}<article class="board-shell ${isSudoku ? "sudoku-shell" : ""}"><div class="route-head ${isSudoku ? "sudoku-head" : ""}">${isSudoku ? `<div class="sudoku-level-wrap"><p class="eyebrow">${save.difficulty.toUpperCase()}</p><h2 class="board-title">Level ${save.level}</h2></div><div class="sudoku-timer-wrap"><strong class="sudoku-timer" data-live-timer="1">${fmt(save.timer)}</strong><span class="muted">${syncLabel()}</span></div>` : `<div><p class="eyebrow">${meta[save.game].title}</p><h2 class="board-title">Level ${save.level}</h2></div><div class="board-summary"><strong>${fmt(save.timer)}</strong><span class="muted">${syncLabel()}</span></div>`}</div>${save.game === "kakuro" ? `<article class="list-card kakuro-intro"><h3>Kakuro</h3><p class="muted">Use clues on dark cells to complete each run total.</p></article>` : ""}<div class="board-frame ${isSudoku ? "sudoku-frame" : ""}">${boardView(save, def)}</div><div class="board-actions ${isSudoku ? "sudoku-actions" : ""}">${useDigitShell ? pad : `<div class="control-strip"><button class="toggle-button ${state.noteMode ? "active" : ""}" data-action="notes" type="button">Notes</button><button class="toggle-button" data-action="hint" type="button">Hint</button><button class="toggle-button" data-action="undo" type="button">Undo</button><button class="toggle-button" data-action="redo" type="button">Redo</button></div>${pad}`}</div></article></section>`;
 }
 
 function progressView() {
