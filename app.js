@@ -160,9 +160,20 @@ function puzzle(game, difficulty, level) {
   return sumplete(seed, difficulty);
 }
 
+function normalizeLockedCells(save) {
+  if (!save || save.game === "sumplete") return save;
+  const def = puzzle(save.game, save.difficulty, save.level);
+  def.puzzle.forEach((row, ri) => row.forEach((given, ci) => {
+    if (!given) return;
+    save.board[ri][ci] = given;
+    if (save.notes?.[ri]?.[ci]) save.notes[ri][ci] = [];
+  }));
+  return save;
+}
+
 function ensureSave(game, difficulty, level) {
   const k = key(game, difficulty, level);
-  if (state.saves[k]) return state.saves[k];
+  if (state.saves[k]) return normalizeLockedCells(state.saves[k]);
   const def = puzzle(game, difficulty, level);
   state.saves[k] = {
     key: k,
@@ -181,7 +192,7 @@ function ensureSave(game, difficulty, level) {
   return state.saves[k];
 }
 
-function currentSave() { return state.currentKey ? state.saves[state.currentKey] : null; }
+function currentSave() { return state.currentKey ? normalizeLockedCells(state.saves[state.currentKey]) : null; }
 function continueSave() { return state.recent.map((k) => state.saves[k]).find((s) => s && !s.completed) || null; }
 function completedCount(game) { return Object.keys(state.completed).filter((k) => k.startsWith(`${game}-`)).length; }
 function pct(game) { return ((completedCount(game) / LEVELS) * 100).toFixed(2); }
@@ -581,12 +592,13 @@ function handleAction(event) {
     } else { save.board[row][col] = Number(btn.dataset.value); save.notes[row][col] = []; }
     markTouched(save); solveCheck(save); render(); return;
   }
-  if (action === "erase") { const save = currentSave(); if (!save || !state.selected) return; const { row, col } = state.selected; recordHistory(save); save.board[row][col] = 0; save.notes[row][col] = []; markTouched(save); render(); return; }
+  if (action === "erase") { const save = currentSave(); if (!save || !state.selected) return; const { row, col } = state.selected; const def = puzzle(save.game, save.difficulty, save.level); if (save.game !== "sumplete" && def.puzzle[row][col]) { toast("Fixed cell"); return; } recordHistory(save); save.board[row][col] = 0; save.notes[row][col] = []; markTouched(save); render(); return; }
   if (action === "sumplete") { const save = currentSave(); if (!save || !state.selected) return; const { row, col } = state.selected; save.board[row][col] = btn.dataset.mode; markTouched(save); solveCheck(save); render(); return; }
   if (action === "undo") { const save = currentSave(); if (!save?.history?.length) { toast("Nothing to undo"); return; } save.future = save.future || []; save.future.push(snapshotSave(save)); restoreSnapshot(save, save.history.pop()); render(); return; }
   if (action === "redo") { const save = currentSave(); if (!save?.future?.length) { toast("Nothing to redo"); return; } save.history = save.history || []; save.history.push(snapshotSave(save)); restoreSnapshot(save, save.future.pop()); render(); return; }
   if (action === "hint") {
     const save = currentSave(); if (!save) return; if (save.completed) { toast("Puzzle already complete"); return; } if (!state.selected) { toast("Select cell first"); return; } const def = puzzle(save.game, save.difficulty, save.level); const { row, col } = state.selected;
+    if (save.game !== "sumplete" && def.puzzle[row][col]) { toast("Fixed cell"); return; }
     recordHistory(save);
     if (save.game === "sumplete") save.board[row][col] = def.keep[row][col] ? "keep" : "remove";
     else if (!def.puzzle[row][col]) save.board[row][col] = def.solution[row][col];
