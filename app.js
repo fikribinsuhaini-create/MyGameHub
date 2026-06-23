@@ -615,9 +615,10 @@ function handleAction(event) {
 
 document.addEventListener("click", handleAction);
 syncButton.addEventListener("click", async () => { pushDebug("Manual sync button tapped"); await ensureSession(); await pullCloud(); await pushCloud(); pushDebug(`Manual sync finished: ${syncLabel()}`); toast(syncLabel()); });
+function timerCanRun() { return !document.hidden && state.route === "play"; }
 setInterval(() => {
   const save = currentSave();
-  if (!save || state.route !== "play" || save.completed) return;
+  if (!save || !timerCanRun() || save.completed) return;
   save.timer += 1;
   state.stats.totalPlaySeconds = (state.stats.totalPlaySeconds || 0) + 1;
   save.updatedAt = new Date().toISOString();
@@ -625,6 +626,12 @@ setInterval(() => {
   const node = document.querySelector(`[data-live-timer="1"]`) || document.querySelector(".board-summary strong");
   if (node) node.textContent = fmt(save.timer);
 }, 1000);
+document.addEventListener("visibilitychange", () => {
+  const save = currentSave();
+  if (!save || state.route !== "play") return;
+  save.updatedAt = new Date().toISOString();
+  persistNow(false);
+});
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("./service-worker.js").catch(() => {});
 window.addEventListener("beforeinstallprompt", (event) => { event.preventDefault(); const btn = document.getElementById("install-button"); btn.classList.remove("hidden"); btn.onclick = async () => { await event.prompt(); btn.classList.add("hidden"); }; });
 window.addEventListener("online", () => { queueSync(); render(); });
