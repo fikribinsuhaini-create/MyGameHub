@@ -256,23 +256,25 @@ function render() {
 function homeView() {
   const cont = continueSave();
   return `
-  <section class="stack">
-    <section class="hero-panel">
-      <div class="hero-head">
-        <div class="hero-copy">
-          <p class="eyebrow">Offline first. Cloud ready.</p>
-          <h2 class="hero-title">Sudoku, Kakuro, Sumplete. One long-term home.</h2>
-          <p class="muted">10,000 seeded levels per game, auto-save every move, shared safely in same Supabase project.</p>
+  <section class="stack home-stack">
+    <section class="hero-panel compact-hero">
+      <div class="hero-head compact-hero-head">
+        <div class="hero-copy compact-hero-copy">
+          <p class="eyebrow">PuzzleHub</p>
+          <h2 class="hero-title compact-hero-title">Three puzzle homes, one place.</h2>
+          <p class="muted compact-hero-text">Resume fast. Pick game fast.</p>
         </div>
-        <div class="board-summary"><strong class="big-number">${state.stats.totalCompleted}</strong><span class="muted">${state.stats.totalCompleted === 0 ? "First puzzle waiting" : `${state.stats.totalCompleted} puzzle solved`}</span><span class="muted">${syncLabel()}</span></div>
+        <div class="board-summary compact-home-summary"><strong class="big-number">${state.stats.totalCompleted}</strong><span class="muted">Solved</span></div>
       </div>
     </section>
     <section class="section-stack">
       <div class="section-head"><h2 class="section-title">Continue Playing</h2></div>
-      ${cont ? `<article class="continue-card"><h3>${meta[cont.game].title} Level ${cont.level}</h3><p class="muted">${cap(cont.difficulty)} - ${fmt(cont.timer)}</p><button class="accent-button" data-action="resume" data-key="${cont.key}" type="button">Continue</button></article>` : `<article class="continue-card"><h3>Fresh board waiting</h3><button class="accent-button" data-action="start" data-game="sudoku" data-difficulty="easy" type="button">Start Sudoku</button></article>`}
+      ${cont ? `<article class="continue-card compact-continue"><div><h3>${meta[cont.game].title} Level ${cont.level}</h3><p class="muted">${cap(cont.difficulty)} - ${fmt(cont.timer)}</p></div><button class="accent-button" data-action="resume" data-key="${cont.key}" type="button">Continue</button></article>` : `<article class="continue-card compact-continue"><div><h3>Fresh board waiting</h3><p class="muted">Start with Sudoku easy.</p></div><button class="accent-button" data-action="start" data-game="sudoku" data-difficulty="easy" type="button">Start</button></article>`}
     </section>
-    <section class="section-stack"><div class="section-head"><h2 class="section-title">Game Library</h2></div><div class="library-grid">${GAMES.map((game) => `<article class="game-card"><h3>${meta[game].title}</h3><p class="muted">${completedCount(game)} / ${LEVELS}</p><div class="bar-track"><div class="bar-fill" style="width:${pct(game)}%"></div></div><button class="accent-button" data-action="library" data-game="${game}" type="button">Open</button></article>`).join("")}</div></section>
-        <section class="section-stack"><div class="section-head"><h2 class="section-title">Quick Statistics</h2></div><div class="quick-grid"><article class="stat-card"><span class="muted">Total Solved</span><strong>${state.stats.totalCompleted}</strong></article><article class="stat-card"><span class="muted">Current Streak</span><strong>${state.stats.streak || 0}</strong></article><article class="stat-card"><span class="muted">Longest Streak</span><strong>${state.stats.longest || 0}</strong></article><article class="stat-card"><span class="muted">Hints Used</span><strong>${state.stats.hints || 0}</strong></article></div></section>
+    <section class="section-stack">
+      <div class="section-head"><h2 class="section-title">Game Library</h2></div>
+      <div class="library-grid compact-library">${GAMES.map((game) => `<article class="game-card compact-game-card"><h3>${meta[game].title}</h3><p class="muted">${completedCount(game)} / ${LEVELS}</p><div class="bar-track"><div class="bar-fill" style="width:${pct(game)}%"></div></div><button class="accent-button" data-action="library" data-game="${game}" type="button">Open</button></article>`).join("")}</div>
+    </section>
   </section>`;
 }
 
