@@ -101,6 +101,18 @@ function totalPlayTime() {
   return Object.values(state.saves).reduce((sum, save) => sum + (save.timer || 0), 0);
 }
 
+async function withTimeout(label, promise, ms = 12000) {
+  let timer = 0;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function rand(seed) {
   let h = 2166136261;
   for (let i = 0; i < seed.length; i += 1) h = Math.imul(h ^ seed.charCodeAt(i), 16777619);
@@ -396,13 +408,18 @@ async function pullCloud() {
   pullInFlight = true;
   try {
     pushDebug("Pulling cloud data");
-    pushDebug("Pull query start");
-    const [profileRes, settingsRes, progressRes, savesRes] = await Promise.all([
-      supabase.from(SYNC_TABLES.profiles).select("*").eq("id", userId).maybeSingle(),
-      supabase.from(SYNC_TABLES.settings).select("*").eq("user_id", userId).maybeSingle(),
-      supabase.from(SYNC_TABLES.progress).select("*").eq("user_id", userId),
-      supabase.from(SYNC_TABLES.saves).select("*").eq("user_id", userId)
-    ]);
+    pushDebug("Pull profiles start");
+    const profileRes = await withTimeout("profiles select", supabase.from(SYNC_TABLES.profiles).select("*").eq("id", userId).maybeSingle());
+    pushDebug("Pull profiles ok");
+    pushDebug("Pull settings start");
+    const settingsRes = await withTimeout("settings select", supabase.from(SYNC_TABLES.settings).select("*").eq("user_id", userId).maybeSingle());
+    pushDebug("Pull settings ok");
+    pushDebug("Pull progress start");
+    const progressRes = await withTimeout("progress select", supabase.from(SYNC_TABLES.progress).select("*").eq("user_id", userId));
+    pushDebug("Pull progress ok");
+    pushDebug("Pull saves start");
+    const savesRes = await withTimeout("saves select", supabase.from(SYNC_TABLES.saves).select("*").eq("user_id", userId));
+    pushDebug("Pull saves ok");
     if (profileRes.data) {
       state.profile.name = profileRes.data.display_name || state.profile.name;
       state.profile.avatar = profileRes.data.avatar || state.profile.avatar;
@@ -465,28 +482,28 @@ async function pushCloud() {
   try {
     pushDebug(`Push start for ${userId}`);
     pushDebug("profiles upsert start");
-    const profileWrite = await supabase.from(SYNC_TABLES.profiles).upsert({ id: userId, display_name: state.profile.name, avatar: state.profile.avatar });
+    const profileWrite = await withTimeout("profiles upsert", supabase.from(SYNC_TABLES.profiles).upsert({ id: userId, display_name: state.profile.name, avatar: state.profile.avatar }));
     if (profileWrite.error) throw new Error(`profiles: ${profileWrite.error.message}`);
     pushDebug("profiles upsert ok");
     pushDebug("settings upsert start");
-    const settingsWrite = await supabase.from(SYNC_TABLES.settings).upsert({
+    const settingsWrite = await withTimeout("settings upsert", supabase.from(SYNC_TABLES.settings).upsert({
       user_id: userId,
       dark_mode: state.settings.dark,
       sound_effects: state.settings.sound,
       animations: state.settings.animations,
       cloud_sync: state.settings.cloudSync
-    }, { onConflict: "user_id" });
+    }, { onConflict: "user_id" }));
     if (settingsWrite.error) throw new Error(`settings: ${settingsWrite.error.message}`);
     pushDebug("settings upsert ok");
     pushDebug("progress upsert start");
-    const progressWrite = await supabase.from(SYNC_TABLES.progress).upsert(GAMES.map((game) => ({
+    const progressWrite = await withTimeout("progress upsert", supabase.from(SYNC_TABLES.progress).upsert(GAMES.map((game) => ({
       user_id: userId,
       game_type: game,
       progress_json: {
         completed: Object.fromEntries(Object.entries(state.completed).filter(([saveKey]) => saveKey.startsWith(`${game}-`))),
         stats: state.stats
       }
-    })), { onConflict: "user_id,game_type" });
+    })), { onConflict: "user_id,game_type" }));
     if (progressWrite.error) throw new Error(`progress: ${progressWrite.error.message}`);
     pushDebug("progress upsert ok");
     const saves = Object.values(state.saves).map((save) => ({
@@ -504,7 +521,7 @@ async function pushCloud() {
       last_played: save.updatedAt || new Date().toISOString(),
       updated_at: save.updatedAt || new Date().toISOString()
     }));
-    if (saves.length) { pushDebug(`saves upsert start (${saves.length})`); const savesWrite = await supabase.from(SYNC_TABLES.saves).upsert(saves, { onConflict: "user_id,puzzle_key" }); if (savesWrite.error) throw new Error(`saves: ${savesWrite.error.message}`); pushDebug(`saves upsert ok (${saves.length})`); } else { pushDebug("no saves to upsert"); }
+    if (saves.length) { pushDebug(`saves upsert start (${saves.length})`); const savesWrite = await withTimeout("saves upsert", supabase.from(SYNC_TABLES.saves).upsert(saves, { onConflict: "user_id,puzzle_key" })); if (savesWrite.error) throw new Error(`saves: ${savesWrite.error.message}`); pushDebug(`saves upsert ok (${saves.length})`); } else { pushDebug("no saves to upsert"); }
     state.cloud.lastSyncedAt = new Date().toISOString();
     state.cloud.status = "Synced";
     pushDebug("Push complete");
